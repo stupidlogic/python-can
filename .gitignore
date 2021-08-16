@@ -72,3 +72,6 @@ target/
 # IDEs
 .vscode/
 .idea/
+
+# Diff Files
+*.orig

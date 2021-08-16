@@ -8,7 +8,7 @@ messages on a can bus.
 import logging
 from typing import Dict, Any
 
-__version__ = "4.0.0-dev.0"
+__version__ = "4.0.0-dev.1"
 
 log = logging.getLogger("can")
 
@@ -23,6 +23,7 @@ from .exceptions import (
     CanOperationError,
     CanTimeoutError,
 )
+
 
 
 from .util import set_logging_level
