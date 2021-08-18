@@ -1,43 +1,37 @@
-
 import ctypes
 import logging
 from time import perf_counter
 from typing import List
 from can import BusABC, Message
-from can.exceptions import (
-    CanInterfaceNotImplementedError,
-    CanInitializationError
-    )
+from can.exceptions import CanInterfaceNotImplementedError, CanInitializationError
 from can.ctypesutil import CLibrary, HANDLE
 from . import constants
 from . import structures
 
-__all__ = ['EcomBus']
+__all__ = ["EcomBus"]
 
-log = logging.getLogger('can.ecom')
+log = logging.getLogger("can.ecom")
 
 # Load library.
 _ecomlib = None
 try:
-    _ecomlib = CLibrary('ecommlib64.dll')
+    _ecomlib = CLibrary("ecommlib64.dll")
 except Exception as e:
-    log.error(f'Cannot load ECOMM library: {e}')
+    log.error(f"Cannot load ECOMM library: {e}")
 
 # Define the error message handling function first.
 # BYTE GetErrorMessage(HANDLE DeviceHandle, ErrorMessage *ErrorMessage)
 _ecomlib.map_symbol(
-    'GetErrorMessage',
-    ctypes.c_byte,
-    (HANDLE, structures.PErrorMessage)
-    )
+    "GetErrorMessage", ctypes.c_byte, (HANDLE, structures.PErrorMessage)
+)
 
 # void GetFriendlyErrorMessage(BYTE ErrorCode, char *ErrorString,
 #   int ErrorStringSize)
 _ecomlib.map_symbol(
-    'GetFriendlyErrorMessage',
+    "GetFriendlyErrorMessage",
     ctypes.c_int,
-    (ctypes.c_byte, ctypes.POINTER(ctypes.c_char), ctypes.c_int)
-    )
+    (ctypes.c_byte, ctypes.POINTER(ctypes.c_char), ctypes.c_int),
+)
 
 
 def __chk_err_msg_buffer(hndl, *args):
@@ -47,76 +41,60 @@ def __chk_err_msg_buffer(hndl, *args):
         err_desc_len = 400
         err_desc = (ctypes.c_char * err_desc_len)()
         _ecomlib.GetFriendlyErrorMessage(
-            err_msg.ErrorCode,
-            ctypes.byref(err_desc),
-            err_desc_len
-            )
-        raise Exception(f'{err_desc.value}')
-
+            err_msg.ErrorCode, ctypes.byref(err_desc), err_desc_len
+        )
+        raise Exception(f"{err_desc.value}")
 
 
 # C-code function defs.
 # HANDLE CANOpen(ULONG SerialNumber, BYTE BaudRate, BYTE *ErrorResultCode)
 _ecomlib.map_symbol(
-    'CANOpen',
-    HANDLE,
-    (ctypes.c_ulong, ctypes.c_byte, ctypes.POINTER(ctypes.c_byte))
-    )
+    "CANOpen", HANDLE, (ctypes.c_ulong, ctypes.c_byte, ctypes.POINTER(ctypes.c_byte))
+)
 
 # HANDLE CANOpenFiltered(ULONG SerialNumber, BYTE BaudRate,
 #   DWORD AcceptanceCode, DWORD Acceptancemask, BYTE *ErrorReturnCode)
 _ecomlib.map_symbol(
-    'CANOpenFiltered',
+    "CANOpenFiltered",
     HANDLE,
     (
         ctypes.c_ulong,
         ctypes.c_byte,
         structures.DWORD,
         structures.DWORD,
-        ctypes.POINTER(ctypes.c_byte))
-    )
+        ctypes.POINTER(ctypes.c_byte),
+    ),
+)
 
 # NOTE: This is here for completeness but serial is not implemented.
 # HANDLE SerialOpen(USHORT SerialNumber, BYTE BaudRate, BYTE *ErrorReturnCode)
 
 # BYTE CloseDevice(HANDLE DeviceHandle)
-_ecomlib.map_symbol('CloseDevice', ctypes.c_byte, (HANDLE, ))
+_ecomlib.map_symbol("CloseDevice", ctypes.c_byte, (HANDLE,))
 
 # BYTE CANSetupDevice(HANDLE DeviceHandle, BYTE SetupCommand,
 #   BYTE SetupProperty)
 _ecomlib.map_symbol(
-    'CANSetupDevice',
-    ctypes.c_byte,
-    (HANDLE, ctypes.c_byte, ctypes.c_byte)
-    )
+    "CANSetupDevice", ctypes.c_byte, (HANDLE, ctypes.c_byte, ctypes.c_byte)
+)
 
 # BYTE CANTransmitMessage(HANDLE cdev, SFFMessage *message)
 _ecomlib.map_symbol(
-    'CANTransmitMessage',
-    ctypes.c_byte,
-    (HANDLE, structures.PFFMessage)
-    )
+    "CANTransmitMessage", ctypes.c_byte, (HANDLE, structures.PFFMessage)
+)
 
 # BYTE CANTransmitMessageEx(HANDLE cdev, EFFMessage *message)
 _ecomlib.map_symbol(
-    'CANTransmitMessageEx',
-    ctypes.c_byte,
-    (HANDLE, structures.PFFMessage)
-    )
+    "CANTransmitMessageEx", ctypes.c_byte, (HANDLE, structures.PFFMessage)
+)
 
 # BYTE CANReceiveMessageEx(HANDLE cdev, EFFMessage *message)
 _ecomlib.map_symbol(
-    'CANReceiveMessageEx',
-    ctypes.c_byte,
-    (HANDLE, structures.PFFMessage)
-    )
+    "CANReceiveMessageEx", ctypes.c_byte, (HANDLE, structures.PFFMessage)
+)
 
 # BYTE CANReceiveMessage(HANDLE cdev, SFFMessage *message)
-_ecomlib.map_symbol(
-    'CANReceiveMessage',
-    ctypes.c_byte,
-    (HANDLE, structures.PFFMessage)
-    )
+_ecomlib.map_symbol("CANReceiveMessage", ctypes.c_byte, (HANDLE, structures.PFFMessage))
 
 # NOTE: This is here for completeness but serial is not implemented.
 # BYTE SerialWrite(HANDLE DeviceHandle, BYTE *DataBuffer, LONG *Length)
@@ -125,39 +103,27 @@ _ecomlib.map_symbol(
 # BYTE SerialRead(HANDLE DeviceHandle, BYTE *DataBuffer, LONG *BufferLength)
 
 # DEV_SEARCH_HANDLE StartDeviceSearch(BYTE Flag)
-_ecomlib.map_symbol(
-    'StartDeviceSearch',
-    structures.DEV_SEARCH_HANDLE,
-    (ctypes.c_byte,)
-    )
+_ecomlib.map_symbol("StartDeviceSearch", structures.DEV_SEARCH_HANDLE, (ctypes.c_byte,))
 
 # BYTE CloseDeviceSearch(DEV_SEARCH_HANDLE SearchHandle)
-_ecomlib.map_symbol(
-    'CloseDeviceSearch',
-    ctypes.c_byte,
-    (structures.DEV_SEARCH_HANDLE,)
-    )
+_ecomlib.map_symbol("CloseDeviceSearch", ctypes.c_byte, (structures.DEV_SEARCH_HANDLE,))
 
 # BYTE FindNextDevice(DEV_SEARCH_HANDLE SearchHandle, DeviceInfo *deviceInfo)
 _ecomlib.map_symbol(
-    'FindNextDevice',
+    "FindNextDevice",
     ctypes.c_byte,
-    (structures.DEV_SEARCH_HANDLE, structures.PDeviceInfo)
-    )
+    (structures.DEV_SEARCH_HANDLE, structures.PDeviceInfo),
+)
 
 # BYTE GetDeviceInfo(HANDLE DeviceHandle, DeviceInfo *deviceInfo);
-_ecomlib.map_symbol(
-    'GetDeviceInfo',
-    ctypes.c_byte,
-    (HANDLE, structures.PDeviceInfo)
-    )
+_ecomlib.map_symbol("GetDeviceInfo", ctypes.c_byte, (HANDLE, structures.PDeviceInfo))
 
 # TODO : Implement pMessageCallback typedef to use.
 # BYTE SetCallbackFunction(HANDLE DeviceHandle,
 #   pMessageHandler *ReceiveCallback, void *UserData)
 
 # int GetQueueSize(HANDLE DeviceHandle, BYTE Flag)
-_ecomlib.map_symbol('GetQueueSize', ctypes.c_int, (HANDLE, ctypes.c_byte))
+_ecomlib.map_symbol("GetQueueSize", ctypes.c_int, (HANDLE, ctypes.c_byte))
 
 
 class EcomBus(BusABC):
@@ -166,8 +132,8 @@ class EcomBus(BusABC):
         125000: constants.CAN_BAUD_125K,
         250000: constants.CAN_BAUD_250K,
         500000: constants.CAN_BAUD_500K,
-        1000000: constants.CAN_BAUD_1MB
-        }
+        1000000: constants.CAN_BAUD_1MB,
+    }
 
     def __init__(self, can_filters=None, **kwargs):
         """Construct and open a CAN bus instance of the specified type.
@@ -187,15 +153,15 @@ class EcomBus(BusABC):
         """
         if _ecomlib is None:
             raise CanInterfaceNotImplementedError(
-                'The ECOM library has not been initialized.'
-                )
+                "The ECOM library has not been initialized."
+            )
 
         # Configuration options:
-        self._receive_own_messages = kwargs.get('receive_own_messages', False)
-        serl_no = kwargs.get('serl_no', None)
+        self._receive_own_messages = kwargs.get("receive_own_messages", False)
+        serl_no = kwargs.get("serl_no", None)
         bitrate = kwargs.get("bitrate", 500000)
         if bitrate not in self.BITRATES:
-            raise ValueError(f'Unsupported bitrate: {bitrate}')
+            raise ValueError(f"Unsupported bitrate: {bitrate}")
         else:
             bitrate = self.BITRATES.get(bitrate)
 
@@ -207,9 +173,7 @@ class EcomBus(BusABC):
                 self._serl_no = devices[0]
             else:
                 # TODO
-                raise Exception(
-                    f'Device with serial number \'{serl_no}\' not found.'
-                    )
+                raise Exception(f"Device with serial number '{serl_no}' not found.")
         else:
             self._serl_no = serl_no
 
@@ -218,10 +182,8 @@ class EcomBus(BusABC):
             err = ctypes.c_byte()
             if can_filters is None:
                 self._dev_hdl = _ecomlib.CANOpen(
-                    self._serl_no,
-                    bitrate,
-                    ctypes.byref(err)
-                    )
+                    self._serl_no, bitrate, ctypes.byref(err)
+                )
             else:
                 # TODO: Check what foramt can_filters needs to be in.
                 # self._dev_hdl = _ecomlib.CANOpenFiltered(
@@ -230,18 +192,16 @@ class EcomBus(BusABC):
                 #     # DWORD Acceptancemask
                 #     ctypes.byref(err)
                 #     )
-                raise NotImplementedError('Filtered open not supported yet.')
+                raise NotImplementedError("Filtered open not supported yet.")
         except Exception as e:
-            raise CanInitializationError(f'Could not open device: {e}')
+            raise CanInitializationError(f"Could not open device: {e}")
 
         # Configure the device.
         # Set device up for synchronous transmits (i.e., blocking).
         # TODO : Consider use of enabling access to the async option.
         _ecomlib.CANSetupDevice(
-            self._dev_hdl,
-            constants.CAN_CMD_TRANSMIT,
-            constants.CAN_PROPERTY_SYNC
-            )
+            self._dev_hdl, constants.CAN_CMD_TRANSMIT, constants.CAN_PROPERTY_SYNC
+        )
 
         self._tick_resl = 64 * 1e-6
         # Struct for receive messages.
@@ -273,13 +233,13 @@ class EcomBus(BusABC):
         """
 
         if not isinstance(msg, Message):
-            raise TypeError('\'msg\' must of type \'Message\'.')
+            raise TypeError("'msg' must of type 'Message'.")
 
         options = 0
         if msg.is_remote_frame:
-            options |= (1 << 6)
+            options |= 1 << 6
         if self._receive_own_messages:
-            options |= (1 << 3)
+            options |= 1 << 3
 
         # TODO : account for dlc
         data = (ctypes.c_byte * len(msg.data)).from_buffer(msg.data)
@@ -291,7 +251,7 @@ class EcomBus(BusABC):
             message.EFFMessage.Data = data
             message.EFFMessage.DataLength = msg.dlc
             message.EFFMessage.Options = options
-            message.EFFMessage.TimeStamp = 0   # No meaning with TX.
+            message.EFFMessage.TimeStamp = 0  # No meaning with TX.
             _ecomlib.CANTransmitMessageEx(self._dev_hdl, ctypes.byref(message))
         else:
             # 11-bit
@@ -301,28 +261,24 @@ class EcomBus(BusABC):
             message.SFFMessage.Data = data
             message.SFFMessage.DataLength = msg.dlc
             message.SFFMessage.Options = options
-            message.SFFMessage.TimeStamp = 0   # No meaning with TX.
+            message.SFFMessage.TimeStamp = 0  # No meaning with TX.
             _ecomlib.CANTransmitMessage(self._dev_hdl, ctypes.byref(message))
 
     def _recv_std(self):
         size = _ecomlib.GetQueueSize(self._dev_hdl, constants.CAN_GET_SFF_SIZE)
         if size > 0:
-            _ecomlib.CANReceiveMessage(
-                self._dev_hdl,
-                ctypes.byref(self._message)
-                )
+            _ecomlib.CANReceiveMessage(self._dev_hdl, ctypes.byref(self._message))
             rx_msg = Message(
                 timestamp=self._message.SFFMessage.TimeStamp * self._tick_resl,
                 is_remote_frame=bool(self._message.SFFMessage.Options & 0x20),
                 is_extended_id=False,
                 arbitration_id=(
-                    (self._message.SFFMessage.IDH << 8)
-                    & self._message.SFFMessage.IDL
-                    ),
+                    (self._message.SFFMessage.IDH << 8) & self._message.SFFMessage.IDL
+                ),
                 dlc=self._message.SFFMessage.DataLength,
                 data=self._message.SFFMessage.Data,
-                channel=None
-                )
+                channel=None,
+            )
         else:
             rx_msg = None
         return rx_msg
@@ -330,10 +286,7 @@ class EcomBus(BusABC):
     def _recv_extended(self):
         size = _ecomlib.GetQueueSize(self._dev_hdl, constants.CAN_GET_EFF_SIZE)
         if size > 0:
-            _ecomlib.CANReceiveMessageEx(
-                self._dev_hdl,
-                ctypes.byref(self._message)
-                )
+            _ecomlib.CANReceiveMessageEx(self._dev_hdl, ctypes.byref(self._message))
             rx_msg = Message(
                 timestamp=self._message.EFFMessage.TimeStamp * self._tick_resl,
                 is_remote_frame=bool(self._message.EFFMessage.Options & 0x20),
@@ -341,8 +294,8 @@ class EcomBus(BusABC):
                 arbitration_id=self._message.EFFMessage.ID,
                 dlc=self._message.EFFMessage.DataLength,
                 data=self._message.EFFMessage.Data,
-                channel=None
-                )
+                channel=None,
+            )
         else:
             rx_msg = None
         return rx_msg
@@ -415,8 +368,10 @@ def get_ecom_devices() -> List[int]:
         dev_info = structures.DeviceInfo()
         # Search through the devices until the one with the serial number is
         # found otherwise return any of them that aren't open.
-        while (_ecomlib.FindNextDevice(search_hndl, ctypes.byref(dev_info))
-                == constants.ECI_NO_ERROR):
+        while (
+            _ecomlib.FindNextDevice(search_hndl, ctypes.byref(dev_info))
+            == constants.ECI_NO_ERROR
+        ):
             serl_nos.append(dev_info.SerialNumber)
     finally:
         # Close search.
