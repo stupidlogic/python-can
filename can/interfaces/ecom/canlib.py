@@ -239,7 +239,7 @@ class EcomBus(BusABC):
         if msg.is_remote_frame:
             options |= 1 << 6
         if self._receive_own_messages:
-            options |= 1 << 3
+            options |= 1 << 4
 
         # TODO : account for dlc
         data = (ctypes.c_byte * len(msg.data)).from_buffer(msg.data)
