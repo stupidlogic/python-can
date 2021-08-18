@@ -1,9 +1,8 @@
-
 # Status return values.
 ECI_NO_ERROR = 0x00
 CAN_NO_RX_MESSAGES = 0x88
 CAN_NO_ERROR_MESSAGES = 0x89
-ECI_NO_MORE_DEVICES = 0x80      # From FindNextDevice
+ECI_NO_MORE_DEVICES = 0x80  # From FindNextDevice
 
 # Allowed values for BaudRate in CANOpen function.
 CAN_BAUD_250K = 0
@@ -53,16 +52,20 @@ FIND_NEXT = 0x00
 
 # ErrorMessage Control Bytes - these correspond to CAN error frames (and
 # similar errors) that occurred on the bus.
-CAN_ERR_BUS = 0x11                  # A CAN Bus error has occurred (DataByte contains ErrorCaptureCode Register)
-CAN_ERR_BUS_OFF_EVENT = 0x12        # Bus off due to error
+CAN_ERR_BUS = (
+    0x11  # A CAN Bus error has occurred (DataByte contains ErrorCaptureCode Register)
+)
+CAN_ERR_BUS_OFF_EVENT = 0x12  # Bus off due to error
 CAN_ERR_RESET_AFTER_BUS_OFF = 0x13  # Error reseting SJA1000 after bus off event
-CAN_ERR_RX_LIMIT_REACHED = 0x16     # The default rx error limit (96) has been reached
-CAN_ERR_TX_LIMIT_REACHED = 0x17     # The default tx error limit (96) has been reached
-CAN_BUS_BACK_ON_EVENT = 0x18        # Bus has come back on after a bus off event due to errors
-CAN_ARBITRATION_LOST = 0x19         # Arbitration lost (DataByte contains location lost) see SJA1000 datasheet
-CAN_ERR_PASSIVE = 0x1A              # SJA1000 has entered error passive mode
-CAN_ERR_OVERRUN = 0x1B              # Embedded firmware has received a receive overrun
-CAN_ERR_OVERRUN_PC = 0x1C           # PC driver received a receive overrun
-ERR_ERROR_FIFO_OVERRUN = 0x20       # Error buffer full - new errors will be lost
-ERR_EFF_RX_FIFO_OVERRUN = 0x21      # EFF Receive buffer full - messages will be lost
-ERR_SFF_RX_FIFO_OVERRUN = 0x22      # SFF Receive buffer full - messages will be lost
+CAN_ERR_RX_LIMIT_REACHED = 0x16  # The default rx error limit (96) has been reached
+CAN_ERR_TX_LIMIT_REACHED = 0x17  # The default tx error limit (96) has been reached
+CAN_BUS_BACK_ON_EVENT = 0x18  # Bus has come back on after a bus off event due to errors
+CAN_ARBITRATION_LOST = (
+    0x19  # Arbitration lost (DataByte contains location lost) see SJA1000 datasheet
+)
+CAN_ERR_PASSIVE = 0x1A  # SJA1000 has entered error passive mode
+CAN_ERR_OVERRUN = 0x1B  # Embedded firmware has received a receive overrun
+CAN_ERR_OVERRUN_PC = 0x1C  # PC driver received a receive overrun
+ERR_ERROR_FIFO_OVERRUN = 0x20  # Error buffer full - new errors will be lost
+ERR_EFF_RX_FIFO_OVERRUN = 0x21  # EFF Receive buffer full - messages will be lost
+ERR_SFF_RX_FIFO_OVERRUN = 0x22  # SFF Receive buffer full - messages will be lost
