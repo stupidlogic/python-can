@@ -6,13 +6,13 @@ from can import BusABC, Message
 from can.exceptions import (
     CanInterfaceNotImplementedError,
     CanInitializationError,
-    CanTimeoutError
-    )
+    CanTimeoutError,
+)
 from can.ctypesutil import CLibrary, HANDLE
 from . import constants
 from . import structures
 
-__all__ = ["EcomBus", 'get_ecom_devices']
+__all__ = ["EcomBus", "get_ecom_devices"]
 
 log = logging.getLogger("can.ecom")
 
@@ -40,7 +40,9 @@ try:
     # C-code function defs.
     # HANDLE CANOpen(ULONG SerialNumber, BYTE BaudRate, BYTE *ErrorResultCode)
     _ecomlib.map_symbol(
-        "CANOpen", HANDLE, (ctypes.c_ulong, ctypes.c_byte, ctypes.POINTER(ctypes.c_byte))
+        "CANOpen",
+        HANDLE,
+        (ctypes.c_ulong, ctypes.c_byte, ctypes.POINTER(ctypes.c_byte)),
     )
 
     # HANDLE CANOpenFiltered(ULONG SerialNumber, BYTE BaudRate,
@@ -54,7 +56,7 @@ try:
             structures.DWORD,
             structures.DWORD,
             ctypes.POINTER(ctypes.c_byte),
-        )
+        ),
     )
 
     # NOTE: This is here for completeness but serial is not implemented.
@@ -85,7 +87,9 @@ try:
     )
 
     # BYTE CANReceiveMessage(HANDLE cdev, SFFMessage *message)
-    _ecomlib.map_symbol("CANReceiveMessage", ctypes.c_byte, (HANDLE, structures.PFFMessage))
+    _ecomlib.map_symbol(
+        "CANReceiveMessage", ctypes.c_byte, (HANDLE, structures.PFFMessage)
+    )
 
     # NOTE: This is here for completeness but serial is not implemented.
     # BYTE SerialWrite(HANDLE DeviceHandle, BYTE *DataBuffer, LONG *Length)
@@ -94,10 +98,14 @@ try:
     # BYTE SerialRead(HANDLE DeviceHandle, BYTE *DataBuffer, LONG *BufferLength)
 
     # DEV_SEARCH_HANDLE StartDeviceSearch(BYTE Flag)
-    _ecomlib.map_symbol("StartDeviceSearch", structures.DEV_SEARCH_HANDLE, (ctypes.c_byte,))
+    _ecomlib.map_symbol(
+        "StartDeviceSearch", structures.DEV_SEARCH_HANDLE, (ctypes.c_byte,)
+    )
 
     # BYTE CloseDeviceSearch(DEV_SEARCH_HANDLE SearchHandle)
-    _ecomlib.map_symbol("CloseDeviceSearch", ctypes.c_byte, (structures.DEV_SEARCH_HANDLE,))
+    _ecomlib.map_symbol(
+        "CloseDeviceSearch", ctypes.c_byte, (structures.DEV_SEARCH_HANDLE,)
+    )
 
     # BYTE FindNextDevice(DEV_SEARCH_HANDLE SearchHandle, DeviceInfo *deviceInfo)
     _ecomlib.map_symbol(
@@ -107,7 +115,9 @@ try:
     )
 
     # BYTE GetDeviceInfo(HANDLE DeviceHandle, DeviceInfo *deviceInfo);
-    _ecomlib.map_symbol("GetDeviceInfo", ctypes.c_byte, (HANDLE, structures.PDeviceInfo))
+    _ecomlib.map_symbol(
+        "GetDeviceInfo", ctypes.c_byte, (HANDLE, structures.PDeviceInfo)
+    )
 
     # TODO : Implement pMessageCallback typedef to use.
     # BYTE SetCallbackFunction(HANDLE DeviceHandle,
@@ -152,7 +162,7 @@ class EcomBus(BusABC):
         # Configuration options:
         serl_no = kwargs.get("serl_no", None)
         bitrate = kwargs.get("bitrate", 500000)
-        self._synchronous = kwargs.get('synchronous', False)
+        self._synchronous = kwargs.get("synchronous", False)
         if bitrate not in self.BITRATES:
             raise ValueError(f"Unsupported bitrate: {bitrate}")
         else:
@@ -167,7 +177,7 @@ class EcomBus(BusABC):
             else:
                 raise CanInitializationError(
                     f"Device with serial number '{serl_no}' not found."
-                    )
+                )
         else:
             self._serl_no = serl_no
 
@@ -201,14 +211,14 @@ class EcomBus(BusABC):
             setup_args = (
                 self._dev_hdl,
                 constants.CAN_CMD_TRANSMIT,
-                constants.CAN_PROPERTY_SYNC
-                )
+                constants.CAN_PROPERTY_SYNC,
+            )
         else:
             setup_args = (
                 self._dev_hdl,
                 constants.CAN_CMD_TRANSMIT,
-                constants.CAN_PROPERTY_ASYNC
-                )
+                constants.CAN_PROPERTY_ASYNC,
+            )
         _ecomlib.CANSetupDevice(*setup_args)
 
         self._tick_resl = constants.TIMESTAMP_RESL
@@ -216,9 +226,8 @@ class EcomBus(BusABC):
         self._msg = structures.FFMessage()
         # Get max TX buffer.
         self._max_tx_buf = _ecomlib.GetQueueSize(
-            self._dev_hdl,
-            constants.CAN_GET_MAX_TX_SIZE
-            )
+            self._dev_hdl, constants.CAN_GET_MAX_TX_SIZE
+        )
 
         self._periodic_tasks = []
         self.set_filters(can_filters)
@@ -266,15 +275,17 @@ class EcomBus(BusABC):
         # If we are synchronous the HW will block.
         while True and not self._synchronous:
             # While we want to ensure transmit and buffer is full.
-            if (_ecomlib.GetQueueSize(self._dev_hdl, constants.CAN_GET_TX_SIZE)
-                    < self._max_tx_buf):
+            if (
+                _ecomlib.GetQueueSize(self._dev_hdl, constants.CAN_GET_TX_SIZE)
+                < self._max_tx_buf
+            ):
                 # Room in buffer; continue to transmit.
                 break
             if (perf_counter() - t0) >= timeout != -1:
                 # Timeout has expired and is not -1 (infinite).
                 raise CanTimeoutError(
-                    'Timeout limit exceeded. Transmit not successful.'
-                    )
+                    "Timeout limit exceeded. Transmit not successful."
+                )
 
         message = structures.FFMessage()
         if msg.is_extended_id:
@@ -387,9 +398,7 @@ class EcomBus(BusABC):
                 break
             if (perf_counter() - t0) >= timeout != -1:
                 # Timeout has expired and is not -1 (infinite).
-                raise CanTimeoutError(
-                    'Timeout limit exceeded. Receive not successful.'
-                    )
+                raise CanTimeoutError("Timeout limit exceeded. Receive not successful.")
         return rx_msg, True
 
     def shutdown(self) -> None:
