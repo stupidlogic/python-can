@@ -49,7 +49,6 @@ FIND_UNOPEN = 0x83
 FIND_ALL = 0x87
 FIND_NEXT = 0x00
 
-
 # ErrorMessage Control Bytes - these correspond to CAN error frames (and
 # similar errors) that occurred on the bus.
 CAN_ERR_BUS = (
@@ -69,3 +68,7 @@ CAN_ERR_OVERRUN_PC = 0x1C  # PC driver received a receive overrun
 ERR_ERROR_FIFO_OVERRUN = 0x20  # Error buffer full - new errors will be lost
 ERR_EFF_RX_FIFO_OVERRUN = 0x21  # EFF Receive buffer full - messages will be lost
 ERR_SFF_RX_FIFO_OVERRUN = 0x22  # SFF Receive buffer full - messages will be lost
+
+# Other Constants
+# Constants from API but that aren't used in functions.
+TIMESTAMP_RESL = 64e-6  # 64 us
