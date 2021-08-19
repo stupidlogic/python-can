@@ -283,9 +283,7 @@ class EcomBus(BusABC):
                 break
             if (perf_counter() - t0) >= timeout != -1:
                 # Timeout has expired and is not -1 (infinite).
-                raise CanTimeoutError(
-                    "Timeout limit exceeded. Transmit not successful."
-                )
+                break
 
         message = structures.FFMessage()
         if msg.is_extended_id:
@@ -398,7 +396,7 @@ class EcomBus(BusABC):
                 break
             if (perf_counter() - t0) >= timeout != -1:
                 # Timeout has expired and is not -1 (infinite).
-                raise CanTimeoutError("Timeout limit exceeded. Receive not successful.")
+                break
         return rx_msg, True
 
     def shutdown(self) -> None:
