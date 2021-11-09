@@ -82,11 +82,12 @@ class BusABC(metaclass=ABCMeta):
     def __str__(self) -> str:
         return self.channel_info
 
-    def recv(self,
-             timeout: Optional[float] = None,
-             arbitration_id: Optional[int] = None,
-             notifier: bool = False
-             ) -> Optional[Message]:
+    def recv(
+        self,
+        timeout: Optional[float] = None,
+        arbitration_id: Optional[int] = None,
+        notifier: bool = False,
+    ) -> Optional[Message]:
         """Block waiting for a message from the Bus.
 
         :param timeout:
@@ -495,6 +496,7 @@ class BusABC(metaclass=ABCMeta):
     @has_acv_notifier.setter
     def has_acv_notifier(self, acv: bool):
         self._acv_notifier = acv
+
 
 class _SelfRemovingCyclicTask(CyclicSendTaskABC, ABC):
     """Removes itself from a bus.
