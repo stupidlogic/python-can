@@ -2,7 +2,7 @@
 Contains the ABC bus implementation and its documentation.
 """
 
-from typing import cast, Any, Iterator, List, Optional, Sequence, Tuple, Union
+from typing import cast, Any, Dict, Iterator, List, Optional, Sequence, Tuple, Union
 
 import can.typechecking
 
@@ -70,16 +70,33 @@ class BusABC(metaclass=ABCMeta):
         :raises can.CanInitializationError: If the bus cannot be initialized
         """
         self._periodic_tasks: List[_SelfRemovingCyclicTask] = []
+        # dictionary of the latest messages by arbitration id
+        self._latest_messages: Dict[int, Message] = dict()
+        # last info from message received
+        self._last_message: Optional[Message] = None
+        self._last_filter_sts: bool = True
+        # internally keep track of active notifiers
+        self._acv_notifier = False
         self.set_filters(can_filters)
 
     def __str__(self) -> str:
         return self.channel_info
 
-    def recv(self, timeout: Optional[float] = None) -> Optional[Message]:
+    def recv(self,
+             timeout: Optional[float] = None,
+             arbitration_id: Optional[int] = None,
+             notifier: bool = False
+             ) -> Optional[Message]:
         """Block waiting for a message from the Bus.
 
         :param timeout:
             seconds to wait for a message or None to wait indefinitely
+        :param arbitration_id:
+            rather than grabbing the latest message it grabs the latest message
+            for a particular arbitration id
+        :param notifier:
+            indicates whether or not the notifier is the one accessing this
+            method rather than calling it directly
 
         :return: ``None`` on timeout or a :class:`Message` object.
 
@@ -91,7 +108,29 @@ class BusABC(metaclass=ABCMeta):
         while True:
 
             # try to get a message
-            msg, already_filtered = self._recv_internal(timeout=time_left)
+            if self.has_acv_notifier and notifier:
+                # notifier is getting the value
+                msg, already_filtered = self._recv_internal(timeout=time_left)
+                self._last_message = msg
+                self._last_filter_sts = already_filtered
+                if msg:
+                    self._latest_messages.update({msg.arbitration_id: msg})
+            elif self.has_acv_notifier and not notifier:
+                # notifier is active but it's not the notifier looking for a
+                # value; always grab from the latest messages and let the
+                # notifier thread handle receiving all of them.
+                # should be pretty fast.
+                if arbitration_id is not None:
+                    # look up the latest one
+                    msg = self._latest_messages.get(arbitration_id, None)
+                    already_filtered = True
+                else:
+                    # grab the latest of all arbitration id's
+                    msg = self._last_message
+                    already_filtered = self._last_filter_sts
+            else:
+                # no active notifier; use default FIFO behavior
+                msg, already_filtered = self._recv_internal(timeout=time_left)
 
             # return it, if it matches
             if msg and (already_filtered or self._matches_filters(msg)):
@@ -449,6 +488,13 @@ class BusABC(metaclass=ABCMeta):
     def fileno(self) -> int:
         raise NotImplementedError("fileno is not implemented using current CAN bus")
 
+    @property
+    def has_acv_notifier(self):
+        return self._acv_notifier
+
+    @has_acv_notifier.setter
+    def has_acv_notifier(self, acv: bool):
+        self._acv_notifier = acv
 
 class _SelfRemovingCyclicTask(CyclicSendTaskABC, ABC):
     """Removes itself from a bus.

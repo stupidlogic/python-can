@@ -68,6 +68,8 @@ class Notifier:
             # Bus doesn't support fileno, we fall back to thread based reader
             pass
 
+        # notify the bus that it has an active listener/notifier
+        bus.has_acv_notifier = True
         if self._loop is not None and reader >= 0:
             # Use bus file descriptor to watch for messages
             self._loop.add_reader(reader, self._on_message_available, bus)
@@ -103,6 +105,10 @@ class Notifier:
         for listener in self.listeners:
             if hasattr(listener, "stop"):
                 listener.stop()
+        for bus in self.bus:
+            # Not sure if this is where; doesn't look like you can restart a bus
+            # without adding it though.
+            bus.has_acv_notifier = False
 
     def _rx_thread(self, bus: BusABC) -> None:
         msg = None
@@ -116,7 +122,7 @@ class Notifier:
                             )
                         else:
                             self._on_message_received(msg)
-                msg = bus.recv(self.timeout)
+                msg = bus.recv(self.timeout, notifier=True)
         except Exception as exc:  # pylint: disable=broad-except
             self.exception = exc
             if self._loop is not None:
@@ -131,7 +137,7 @@ class Notifier:
                 logger.info("suppressed exception: %s", exc)
 
     def _on_message_available(self, bus: BusABC) -> None:
-        msg = bus.recv(0)
+        msg = bus.recv(0, notifier=True)
         if msg is not None:
             self._on_message_received(msg)
 
