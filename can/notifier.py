@@ -105,10 +105,9 @@ class Notifier:
         for listener in self.listeners:
             if hasattr(listener, "stop"):
                 listener.stop()
-        for bus in self.bus:
-            # Not sure if this is where; doesn't look like you can restart a bus
-            # without adding it though.
-            bus.has_acv_notifier = False
+        for each_bus in self.bus if isinstance(self.bus, list) else [self.bus]:
+            # deactivate notifier flag
+            each_bus.has_acv_notifier = False
 
     def _rx_thread(self, bus: BusABC) -> None:
         msg = None
