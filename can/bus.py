@@ -112,10 +112,15 @@ class BusABC(metaclass=ABCMeta):
             if self.has_acv_notifier and notifier:
                 # notifier is getting the value
                 msg, already_filtered = self._recv_internal(timeout=time_left)
-                if msg is not None:
-                    self._last_message = msg
                 self._last_filter_sts = already_filtered
                 if msg:
+                    # Keep last message; don't overwrite with None.
+                    # This is a deviation from original behavior because we are
+                    # not maintaining a pseudo stack when the notifier pulls
+                    # the rx message
+                    # TODO : keep a pseudo stack with notifier active to
+                    #  maintain expected module behavior
+                    self._last_message = msg
                     self._latest_messages.update({msg.arbitration_id: msg})
             elif self.has_acv_notifier and not notifier:
                 # notifier is active but it's not the notifier looking for a
@@ -131,7 +136,7 @@ class BusABC(metaclass=ABCMeta):
                     msg = self._last_message
                     already_filtered = self._last_filter_sts
             else:
-                # no active notifier; use default FIFO behavior
+                # no active notifier; use default LIFO behavior
                 msg, already_filtered = self._recv_internal(timeout=time_left)
 
             # return it, if it matches
