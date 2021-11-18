@@ -112,7 +112,8 @@ class BusABC(metaclass=ABCMeta):
             if self.has_acv_notifier and notifier:
                 # notifier is getting the value
                 msg, already_filtered = self._recv_internal(timeout=time_left)
-                self._last_message = msg
+                if msg is not None:
+                    self._last_message = msg
                 self._last_filter_sts = already_filtered
                 if msg:
                     self._latest_messages.update({msg.arbitration_id: msg})
