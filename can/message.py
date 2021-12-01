@@ -45,7 +45,7 @@ class Message:  # pylint: disable=too-many-instance-attributes; OK for a datacla
         "is_rx",
         "bitrate_switch",
         "error_state_indicator",
-        "destination_address",      # TODO : remove, see later note.
+        "destination_address",  # TODO : remove, see later note.
         "__weakref__",  # support weak references to messages
     )
 
@@ -64,7 +64,7 @@ class Message:  # pylint: disable=too-many-instance-attributes; OK for a datacla
         bitrate_switch: bool = False,
         error_state_indicator: bool = False,
         check: bool = False,
-        **kwargs
+        **kwargs,
     ):
         """
         To create a message object, simply provide any of the below attributes
@@ -91,8 +91,8 @@ class Message:  # pylint: disable=too-many-instance-attributes; OK for a datacla
         self.error_state_indicator = error_state_indicator
         # TODO : Create python-j1939 implementation in order to keep this pure.
         # Maintain backwards compatibility with python-j1939 (display team).
-        self.is_extended_id = kwargs.get('extended_id', is_extended_id)
-        self.destination_address = kwargs.get('destination_address', None)
+        self.is_extended_id = kwargs.get("extended_id", is_extended_id)
+        self.destination_address = kwargs.get("destination_address", None)
 
         if data is None or is_remote_frame:
             self.data = bytearray()
