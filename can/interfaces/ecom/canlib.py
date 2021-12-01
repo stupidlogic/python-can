@@ -197,11 +197,8 @@ class EcomBus(BusABC):
                 )
             else:
                 self._dev_hdl = _ecomlib.CANOpenFiltered(
-                    self._serl_no,
-                    bitrate,
-                    self._acceptance_mask,
-                    ctypes.byref(err)
-                    )
+                    self._serl_no, bitrate, self._acceptance_mask, ctypes.byref(err)
+                )
         except Exception as e:
             raise CanInitializationError(f"Could not open device: {e}")
 
@@ -399,9 +396,7 @@ class EcomBus(BusABC):
     def shutdown(self) -> None:
         _ecomlib.CloseDevice(self._dev_hdl)
 
-    def _apply_filters(self,
-                       filters: Optional[CanFilters]
-                       ) -> None:
+    def _apply_filters(self, filters: Optional[CanFilters]) -> None:
         if self._dev_hdl is None:
             if filters is None:
                 # Don't do anything.
@@ -423,9 +418,9 @@ class EcomBus(BusABC):
                 # <can_id>~<can_mask> (matches when <received_can_id> &
                 # mask != can_id & mask)
                 self._acceptance_mask = None
-                raise NotImplementedError('todo: implement filtering')
+                raise NotImplementedError("todo: implement filtering")
         else:
-            raise CanError('Filter can only be set before connecting.')
+            raise CanError("Filter can only be set before connecting.")
 
 
 def get_ecom_devices() -> List[int]:
