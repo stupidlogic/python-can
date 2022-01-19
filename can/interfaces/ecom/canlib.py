@@ -258,6 +258,15 @@ class EcomBus(BusABC):
         if self._receive_own_messages:
             options |= 1 << 4
         # TODO : account for dlc
+
+        # If the length of the message is not 8 bytes, append 0x00s until length is 8
+        # Ultimately, any appended bytes beyond specified dlc will not be transmitted
+        # anyway
+        if len(msg.data) < 8:
+            append_bytes = 8-len(msg.data)
+            for i in range(0, append_bytes):
+                msg.data.append(0x00)
+
         data = (ctypes.c_byte * len(msg.data)).from_buffer(msg.data)
 
         # Begin tryign to transmit with consideration for the timeout.
