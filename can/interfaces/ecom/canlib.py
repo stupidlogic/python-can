@@ -155,8 +155,9 @@ class EcomBus(BusABC):
             Any backend dependent configurations are passed in this dictionary
         """
         # Initial values.
-        self._acceptance_mask = None
+
         self._dev_hdl = None
+        self._apply_filters(can_filters)
         # Call to super.
         super().__init__(channel=None, can_filters=can_filters, **kwargs)
 
@@ -168,6 +169,7 @@ class EcomBus(BusABC):
         # Configuration options:
         serl_no = kwargs.get("serl_no", None)
         bitrate = kwargs.get("bitrate", 500000)
+        self._bitrate = bitrate
         self._synchronous = kwargs.get("synchronous", False)
         if bitrate not in self.BITRATES:
             raise ValueError(f"Unsupported bitrate: {bitrate}")
@@ -197,7 +199,7 @@ class EcomBus(BusABC):
                 )
             else:
                 self._dev_hdl = _ecomlib.CANOpenFiltered(
-                    self._serl_no, bitrate, self._acceptance_mask, ctypes.byref(err)
+                    self._serl_no, bitrate, self._acceptance_code, self._acceptance_mask, ctypes.byref(err)
                 )
         except Exception as e:
             raise CanInitializationError(f"Could not open device: {e}")
@@ -410,6 +412,8 @@ class EcomBus(BusABC):
             if filters is None:
                 # Don't do anything.
                 self._acceptance_mask = None
+                self._acceptance_code = None
+                self._extended_code = None
             else:
                 # NOTES for SJA1000 CAN Transceiver:
                 # CAN transceiver datasheet:
@@ -426,8 +430,18 @@ class EcomBus(BusABC):
                 # <received_can_id> & mask == can_id & mask)
                 # <can_id>~<can_mask> (matches when <received_can_id> &
                 # mask != can_id & mask)
-                self._acceptance_mask = None
-                raise NotImplementedError("todo: implement filtering")
+                self._acceptance_mask = filters["can_mask"]
+                self._acceptance_code = filters["can_id"]
+                try:
+                    self._extended_code = filters["extended"]
+                except:
+                    self._extended_code = False
+
+                # If the acceptance code is an 11-bit ID. Shift it to the MSB
+                # of a 29-bit ID for CANOpenFiltered func
+                if self._extended_code == False:
+                    self._acceptance_code = self._acceptance_code << 18
+                # raise NotImplementedError("todo: implement filtering")
         else:
             raise CanError("Filter can only be set before connecting.")
 
