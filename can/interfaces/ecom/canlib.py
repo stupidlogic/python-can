@@ -157,9 +157,9 @@ class EcomBus(BusABC):
         # Initial values.
 
         self._dev_hdl = None
-        self._apply_filters(can_filters)
+        self._can_filters = can_filters
         # Call to super.
-        super().__init__(channel=None, can_filters=can_filters, **kwargs)
+        super().__init__(channel=None, can_filters=self._can_filters, **kwargs)
 
         if _ecomlib is None:
             raise CanInterfaceNotImplementedError(
@@ -192,14 +192,14 @@ class EcomBus(BusABC):
         # Open device.
         try:
             err = ctypes.c_byte()
-            if self._acceptance_mask is None:
+            if self._can_filters is None:
                 # No filter.
                 self._dev_hdl = _ecomlib.CANOpen(
                     self._serl_no, bitrate, ctypes.byref(err)
                 )
             else:
                 self._dev_hdl = _ecomlib.CANOpenFiltered(
-                    self._serl_no, bitrate, self._acceptance_code, self._acceptance_mask, ctypes.byref(err)
+                    self._serl_no, bitrate, self._can_filters["can_id"], self._can_filters["can_mask"], ctypes.byref(err)
                 )
         except Exception as e:
             raise CanInitializationError(f"Could not open device: {e}")
@@ -318,7 +318,7 @@ class EcomBus(BusABC):
                 timestamp=msg.TimeStamp * self._tick_resl,
                 is_remote_frame=bool(msg.Options & 0x40),
                 is_extended_id=False,
-                arbitration_id=(msg.IDH << 8) & msg.IDL,
+                arbitration_id=(msg.IDH << 8) | msg.IDL,
                 dlc=msg.DataLength,
                 data=msg.Data,
                 channel=None,
@@ -409,12 +409,7 @@ class EcomBus(BusABC):
 
     def _apply_filters(self, filters: Optional[CanFilters]) -> None:
         if self._dev_hdl is None:
-            if filters is None:
-                # Don't do anything.
-                self._acceptance_mask = None
-                self._acceptance_code = None
-                self._extended_code = None
-            else:
+            if filters is not None:
                 # NOTES for SJA1000 CAN Transceiver:
                 # CAN transceiver datasheet:
                 #   https://www.nxp.com/docs/en/data-sheet/SJA1000.pdf
@@ -433,14 +428,14 @@ class EcomBus(BusABC):
                 self._acceptance_mask = filters["can_mask"]
                 self._acceptance_code = filters["can_id"]
                 try:
-                    self._extended_code = filters["extended"]
+                    _extended_code = filters["extended"]
                 except:
-                    self._extended_code = False
+                    _extended_code = False
 
                 # If the acceptance code is an 11-bit ID. Shift it to the MSB
                 # of a 29-bit ID for CANOpenFiltered func
-                if self._extended_code == False:
-                    self._acceptance_code = self._acceptance_code << 18
+                if _extended_code == False:
+                    self._can_filters["can_id"] = self._can_filters["can_id"] << 18
                 # raise NotImplementedError("todo: implement filtering")
         else:
             raise CanError("Filter can only be set before connecting.")

@@ -11,8 +11,8 @@ DEV_SEARCH_HANDLE = HANDLE
 class FFMessage(ctypes.Union):
     class SFFMessage(ctypes.Structure):
         _fields_ = [
-            ("IDH", ctypes.c_byte),
-            ("IDL", ctypes.c_byte),
+            ("IDH", ctypes.c_ubyte),
+            ("IDL", ctypes.c_ubyte),
             ("Data", ctypes.c_byte * 8),
             ("Options", ctypes.c_byte),
             ("DataLength", ctypes.c_byte),
