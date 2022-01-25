@@ -565,7 +565,7 @@ class IXXATBus(BusABC):
                     constants.CAN_ACC_CODE_NONE,
                     constants.CAN_ACC_MASK_NONE,
                 )
-            for can_filter in can_filters:
+            for can_filter_name, can_filter in can_filters.items():
                 # Filters define what messages are accepted
                 code = int(can_filter["can_id"])
                 mask = int(can_filter["can_mask"])
